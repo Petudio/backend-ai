@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 public class testController {
@@ -39,6 +40,17 @@ public class testController {
     @PostMapping("/upload")
     public ResponseEntity<String> receiveFile(@RequestParam("file") MultipartFile file) {
         System.out.println("file.getOriginalFilename() = " + file.getOriginalFilename());
+        // 파일을 저장하거나 처리하는 코드 작성
+        // ...
+
+        return ResponseEntity.ok("File received successfully.");
+    }
+
+    @PostMapping("/upload/multiple")
+    public ResponseEntity<String> receiveFiles(@RequestParam("files") MultipartFile[] files) {
+        for (MultipartFile file : files) {
+            System.out.println("file.getOriginalFilename() = " + file.getOriginalFilename());
+        }
         // 파일을 저장하거나 처리하는 코드 작성
         // ...
 
