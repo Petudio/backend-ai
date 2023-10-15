@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -42,7 +43,7 @@ public class AiCopyController {
     public String beforePictures(@RequestParam("beforePictures") List<MultipartFile> beforePictures, @RequestParam("bundleId") Long bundleId) {
         List<BeforePictureDto> beforePictureDtoList = beforePictures.stream()
                 .map(beforePicture -> new BeforePictureDto(beforePicture.getOriginalFilename(), template.execute(beforePicture::getBytes)))
-                .toList();
+                .collect(Collectors.toList());
 
         aiCopyService.createCopyPicture(beforePictureDtoList, bundleId);
         return "ok";
