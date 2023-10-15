@@ -32,6 +32,8 @@ public class AiCopyService {
     private String mainServerBaseUrl;
     @Value("${python.command}")
     private String pythonCommand;
+    @Value("${python.script.baseurl}")
+    private String pythonScriptBaseUrl;
     private final CheckedExceptionConverterTemplate template;
 
     @Autowired
@@ -58,7 +60,7 @@ public class AiCopyService {
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         //sleep 10 secs using python
-        String pythonPath = "src/main/java/petudio/petudioai/python/sleep.py";
+        String pythonPath = pythonScriptBaseUrl + "/sleep.py";
         ProcessBuilder processBuilder = new ProcessBuilder(pythonCommand, pythonPath);
         template.execute(() -> {
             Process process = processBuilder.start();
