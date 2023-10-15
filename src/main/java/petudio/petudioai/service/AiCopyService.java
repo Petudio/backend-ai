@@ -30,6 +30,8 @@ public class AiCopyService {
     private String localStorageUrl;
     @Value("${petudio.main.server.url}")
     private String mainServerBaseUrl;
+    @Value("${python.command}")
+    private String pythonCommand;
     private final CheckedExceptionConverterTemplate template;
 
     @Autowired
@@ -57,7 +59,7 @@ public class AiCopyService {
 
         //sleep 10 secs using python
         String pythonPath = "src/main/java/petudio/petudioai/python/sleep.py";
-        ProcessBuilder processBuilder = new ProcessBuilder("python", pythonPath);
+        ProcessBuilder processBuilder = new ProcessBuilder(pythonCommand, pythonPath);
         template.execute(() -> {
             Process process = processBuilder.start();
             int i = process.waitFor();
