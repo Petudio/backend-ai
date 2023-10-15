@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import petudio.petudioai.etc.Pair;
 import petudio.petudioai.etc.callback.CheckedExceptionConverterTemplate;
+import petudio.petudioai.service.dto.BeforePictureDto;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,64 +37,52 @@ public class AiCopyService {
         template = new CheckedExceptionConverterTemplate();
     }
 
+    //@Async 사용시 파일 관리에 이상한게 생김, ex : readAllBytes에서 UncheckedIoException, cannot delete exeption 발생
+    //https://stackoverflow.com/questions/36565597/spring-async-file-upload-and-processing
+    //이유 : 
+    //multi part file의 관리 : file을 input으로 받음 -> 내 로컬환경의 임시저장소에 파일 형태로 저장해놓음 -> 컨트롤러가 종료될때(서블릿이 종료될때) 해당 파일을 delete
+    //따라서 async service에서 multipartfile을 인자로 받게되면 컨트롤러가 종료되면서 해당 multipart file을 삭제하려고 하는데 service에서는 해당 multipart file.getBytes를 하게 되면서 race condition 발생
+    //그러므로 controller단에서 byteArray로 전부 변환한 후에 async service에 넘겨줘야 한다.
     @Async
-    public void createCopyPicture(List<MultipartFile> beforePictures, Long bundleId){
+    public void createCopyPicture(List<BeforePictureDto> beforePictures, Long bundleId){
 
-//        template.execute(() -> {
-//            Thread.sleep(1000 * 10);
-//            return null;
-//        });
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-        File bundleFolder = new File(localStorageUrl + "/" + bundleId);
-        bundleFolder.mkdirs();
+        MultiValueMap<String, Object> body = createBody(beforePictures, bundleId);
 
-        //before file, after file, multipart file
-        List<Pair<Pair<File, File>, MultipartFile>> fileContainerList = beforePictures.stream()
-                .map(beforePicture -> new Pair<>(
-                        new Pair<>(
-                                new File(localStorageUrl + "/" + bundleId + "/" + beforePicture.getOriginalFilename()),
-                                new File(localStorageUrl + "/" + bundleId + "/" + createOriginalNameAfter(beforePicture.getOriginalFilename()))
-                        ),
-                        beforePicture
-                )).toList();
+        RestTemplate restTemplate = new RestTemplate();
 
-        fileContainerList
-                .forEach(fileContainer -> template.execute(() -> {
-                    fileContainer.getFirst().getFirst().createNewFile();
-                    fileContainer.getFirst().getSecond().createNewFile();
-                    return null;
-                }));
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        //sleep 10 secs using python
+        String pythonPath = "src/main/java/petudio/petudioai/python/sleep.py";
+        ProcessBuilder processBuilder = new ProcessBuilder("python", pythonPath);
+        template.execute(() -> {
+            Process process = processBuilder.start();
+            int i = process.waitFor();
+            log.info("exit code = {}", i);
+            return null;
+        });
 
 
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-//
-//        MultiValueMap<String, Object> body = createBody(beforePictures, bundleId);
-//
-//        RestTemplate restTemplate = new RestTemplate();
-//
-//        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-//
-//        ResponseEntity<String> response = restTemplate.exchange(
-//                mainServerBaseUrl + "/api/callback",
-//                HttpMethod.POST,
-//                requestEntity,
-//                String.class
-//        );
-//        log.info("response = {}", response);
+        ResponseEntity<String> response = restTemplate.exchange(
+                mainServerBaseUrl + "/api/callback/addAfter",
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
+        log.info("response = {}", response);
     }
 
-    private MultiValueMap<String, Object> createBody(List<MultipartFile> beforePictures, Long bundleId) {
+    private MultiValueMap<String, Object> createBody(List<BeforePictureDto> beforePictures, Long bundleId) {
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
         body.add("bundleId", bundleId);
         beforePictures
                 .forEach(beforePicture -> {
-                    InputStream is = template.execute(() -> beforePicture.getInputStream());
-                    byte[] byteArray = template.execute(is::readAllBytes);
-                    template.execute(() ->{is.close(); return null;});
-                    String afterName = createOriginalNameAfter(beforePicture.getOriginalFilename());
-                    ByteArrayResource byteArrayResource = new ByteArrayResource(byteArray) {
+                    String afterName = createOriginalNameAfter(beforePicture.getOriginalPictureName());
+                    ByteArrayResource byteArrayResource = new ByteArrayResource(beforePicture.getByteArray()) {
                         @Override
                         public String getFilename() {
                             return afterName;
