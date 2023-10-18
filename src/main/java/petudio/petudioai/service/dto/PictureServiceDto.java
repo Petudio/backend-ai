@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
-public class BeforePictureDto {
+public class PictureServiceDto {
     private final String originalPictureName;
     private final byte[] byteArray;
 }
