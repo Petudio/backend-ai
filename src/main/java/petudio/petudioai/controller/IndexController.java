@@ -35,7 +35,7 @@ public class IndexController {
 
 
     @PostMapping("/copy/upload")
-    public String beforePictures(@RequestParam("bundleId") Long bundleId, @RequestParam("beforePictures") List<MultipartFile> beforePictures) {
+    public String beforePicturesForCopy(@RequestParam("bundleId") Long bundleId, @RequestParam("beforePictures") List<MultipartFile> beforePictures) {
         List<PictureServiceDto> beforePictureServiceDtoList = beforePictures.stream()
                 .map(beforePicture -> new PictureServiceDto(beforePicture.getOriginalFilename(), template.execute(beforePicture::getBytes)))
                 .collect(Collectors.toList());
@@ -45,7 +45,20 @@ public class IndexController {
         aiCopyService.generateAfterPicture(beforeBundle)
                 .thenApply(mainServerCallService::sendAfterPicturesToMainServer)
                 .thenAccept(responseEntity -> log.info("response from main server = {}", responseEntity));
+        return "ok";
+    }
 
+    @PostMapping("/four-cuts/upload")
+    public String beforePicturesForFourCuts(@RequestParam("bundleId") Long bundleId, @RequestParam("beforePictures") List<MultipartFile> beforePictures) {
+        List<PictureServiceDto> beforePictureServiceDtoList = beforePictures.stream()
+                .map(beforePicture -> new PictureServiceDto(beforePicture.getOriginalFilename(), template.execute(beforePicture::getBytes)))
+                .collect(Collectors.toList());
+        BundleServiceDto beforeBundle = new BundleServiceDto(bundleId, beforePictureServiceDtoList);
+
+        //@Async, callback
+        aiCopyService.generateAfterPicture(beforeBundle)
+                .thenApply(mainServerCallService::sendAfterPicturesToMainServer)
+                .thenAccept(responseEntity -> log.info("response from main server = {}", responseEntity));
         return "ok";
     }
 }
