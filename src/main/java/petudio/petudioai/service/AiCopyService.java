@@ -31,6 +31,7 @@ public class AiCopyService {
     @Async
     public CompletableFuture<BundleServiceDto> generateAfterPicture(BundleServiceDto beforeBundle){
 
+        log.info("hello from ai");
         //sleep 10 secs using python, ai model core logic
         String pythonPath = pythonScriptBaseUrl + "/sleep.py";
         ProcessBuilder processBuilder = new ProcessBuilder(pythonCommand, pythonPath);
@@ -40,6 +41,12 @@ public class AiCopyService {
             log.info("exit code = {}", i);
             return null;
         });
+
+        try{
+            Thread.sleep(1000 * 5);
+        }catch (InterruptedException e){
+            throw new RuntimeException(e);
+        }
 
         List<PictureServiceDto> beforePictureList = beforeBundle.getPictures();
         List<PictureServiceDto> afterPictureList = beforePictureList.stream()
