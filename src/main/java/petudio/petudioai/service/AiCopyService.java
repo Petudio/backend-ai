@@ -42,6 +42,12 @@ public class AiCopyService {
             return null;
         });
 
+        try{
+            Thread.sleep(1000 * 5);
+        }catch (InterruptedException e){
+            throw new RuntimeException(e);
+        }
+
         List<PictureServiceDto> beforePictureList = beforeBundle.getPictures();
         List<PictureServiceDto> afterPictureList = beforePictureList.stream()
                 .map(picture -> new PictureServiceDto(createOriginalNameAfter(picture.getOriginalPictureName()), picture.getByteArray()))
