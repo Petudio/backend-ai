@@ -31,6 +31,7 @@ public class AiCopyService {
     @Async
     public CompletableFuture<BundleServiceDto> generateAfterPicture(BundleServiceDto beforeBundle){
 
+        log.info("hello from ai");
         //sleep 10 secs using python, ai model core logic
         String pythonPath = pythonScriptBaseUrl + "/sleep.py";
         ProcessBuilder processBuilder = new ProcessBuilder(pythonCommand, pythonPath);
